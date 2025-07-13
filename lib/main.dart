@@ -1,8 +1,95 @@
 import 'package:flutter/material.dart';
+import 'data/local_database.dart';
+
 
 void main() {
-  runApp(const MyApp());
+  runApp(const QuickTaskApp());
 }
+
+class QuickTaskApp extends StatelessWidget{
+  const QuickTaskApp({super.key});
+
+  @override
+  Widget build(BuildContext context){
+	return MaterialApp(
+	  title: "ToDo List",
+	  home: TaskPage(),
+	);
+  }
+}
+
+
+
+class TaskPage extends StatefulWidget {
+  @override
+  State<TaskPage> createState() => _TaskPageState();
+}
+
+
+class _TaskPageState extends State<TaskPage>{
+  final db = LocalDatabase();
+  final controller = TextEditingController();
+  
+  @override
+  void displose(){
+    controller.dispose();
+    db.close();
+    super.dispose();
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('QuickTask')),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(hintText: 'Enter task'),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () {
+                    final text = controller.text.trim();
+                    if (text.isNotEmpty) {
+                      db.addTask(text);
+                      controller.clear();
+                    }
+                  },
+                )
+              ],
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<List<Task>>(
+              stream: db.watchAllTasks(),
+              builder: (context, snapshot) {
+                final tasks = snapshot.data ?? [];
+                return ListView.builder(
+                  itemCount: tasks.length,
+                  itemBuilder: (_, index) {
+                    final task = tasks[index];
+                    return ListTile(
+                      title: Text(task.name),
+                    );
+                  },
+                );
+              },
+            ),
+          )
+        ],
+      ),
+    );
+  }
+}
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
